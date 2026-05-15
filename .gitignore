@@ -38,6 +38,6 @@ public/sw.js.map
 public/workbox-*.js.map
 
 # Legacy standalone app files (kept as design reference, not part of React build)
-sw.js
-manifest.json
-icons/
+/sw.js
+/manifest.json
+/icons/
