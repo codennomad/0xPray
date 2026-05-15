@@ -1,0 +1,206 @@
+@import "tailwindcss";
+
+@theme {
+  /* Fonts */
+  --font-family-display: 'Space Grotesk', sans-serif;
+  --font-family-body: 'Inter', system-ui, sans-serif;
+  --font-family-mono: 'JetBrains Mono', monospace;
+  --font-family-jakarta: 'Plus Jakarta Sans', sans-serif;
+
+  /* Surfaces */
+  --color-void: #000000;
+  --color-s1: #080808;
+  --color-s2: #0f0f0f;
+  --color-s3: #141414;
+  --color-s4: #1c1c1c;
+
+  /* Text */
+  --color-text: #e8e8e8;
+  --color-muted: #737373;
+  --color-faint: #3a3a3a;
+
+  /* Flame accent */
+  --color-flame: #f97316;
+  --color-flame-dim: rgba(249, 115, 22, 0.15);
+  --color-flame-glow: rgba(249, 115, 22, 0.4);
+
+  /* Semantic */
+  --color-answered: #22c55e;
+  --color-answered-dim: rgba(34, 197, 94, 0.12);
+  --color-danger: #ef4444;
+  --color-danger-dim: rgba(239, 68, 68, 0.12);
+
+  /* Borders */
+  --color-border: rgba(255, 255, 255, 0.07);
+  --color-border-hi: rgba(255, 255, 255, 0.14);
+  --color-border-flame: rgba(249, 115, 22, 0.45);
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+}
+
+/* ── Reset & Base ─────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  height: 100%;
+  background: #000;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  height: 100%;
+  background: #000;
+  color: #e8e8e8;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+/* ── Selection ────────────────────────────────────────────────────── */
+::selection { background: rgba(249,115,22,0.28); color: #e8e8e8; }
+
+/* ── Focus ────────────────────────────────────────────────────────── */
+:focus-visible { outline: 1px solid rgba(249,115,22,0.6); outline-offset: 2px; border-radius: 4px; }
+:focus:not(:focus-visible) { outline: none; }
+
+/* ── iOS font size fix ────────────────────────────────────────────── */
+input, textarea, select { font-size: 16px; }
+
+/* ── Animations ───────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-6px); }
+  40%     { transform: translateX(6px); }
+  60%     { transform: translateX(-4px); }
+  80%     { transform: translateX(4px); }
+}
+@keyframes blink {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0; }
+}
+@keyframes pulseGlow {
+  0%,100% { box-shadow: 0 0 10px rgba(249,115,22,0.3); }
+  50%     { box-shadow: 0 0 24px rgba(249,115,22,0.7); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.animate-fade-up  { animation: fadeUp  0.22s ease both; }
+.animate-fade-in  { animation: fadeIn  0.18s ease both; }
+.animate-scale-in { animation: scaleIn 0.2s  ease both; }
+.animate-shake    { animation: shake   0.4s  ease; }
+.animate-spin     { animation: spin    1s linear infinite; }
+
+/* Stagger children */
+.stagger > * { animation: fadeUp 0.22s ease both; }
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 40ms; }
+.stagger > *:nth-child(3) { animation-delay: 80ms; }
+.stagger > *:nth-child(4) { animation-delay: 120ms; }
+.stagger > *:nth-child(5) { animation-delay: 160ms; }
+
+/* ── Terminal cursor ──────────────────────────────────────────────── */
+.cursor::after {
+  content: '_';
+  animation: blink 1s step-end infinite;
+  color: #f97316;
+}
+
+/* ── Patterns ─────────────────────────────────────────────────────── */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.bg-dots {
+  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.07) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+/* ── Glass ────────────────────────────────────────────────────────── */
+.glass {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ── Dividers ─────────────────────────────────────────────────────── */
+.divider-h {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1) 50%, transparent);
+}
+.divider-flame {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(249,115,22,0.4) 50%, transparent);
+}
+
+/* ── Glow ─────────────────────────────────────────────────────────── */
+.glow-flame { box-shadow: 0 0 20px rgba(249,115,22,0.4); }
+.glow-flame-sm { box-shadow: 0 0 12px rgba(249,115,22,0.3); }
+
+/* ── Mono label ───────────────────────────────────────────────────── */
+.mono-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #3a3a3a;
+}
+
+/* ── PIN dot ──────────────────────────────────────────────────────── */
+.pin-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.pin-dot.filled  { background: #f97316; border-color: #f97316; transform: scale(1.1); }
+.pin-dot.error   { background: #ef4444; border-color: #ef4444; animation: shake 0.4s ease; }
+
+/* ── Scrollable area ──────────────────────────────────────────────── */
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* ── Safe area ────────────────────────────────────────────────────── */
+.pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.pb-nav  { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
