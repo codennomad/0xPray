@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import {
   X,
@@ -21,8 +20,6 @@ export default function Focus() {
   const prayers = vault?.prayers ?? []
   const idx = prayers.findIndex((p) => p.id === id)
   const prayer = idx >= 0 ? prayers[idx] : null
-
-  const [revealing, setRevealing] = useState(false)
 
   if (!prayer) {
     return (

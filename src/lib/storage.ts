@@ -1,7 +1,23 @@
 import { deriveKey, encrypt, decrypt, randomSalt, b64dec } from './crypto'
+import { pushVault, isLoggedIn } from './api'
 import type { Vault, VaultMeta } from '@/types'
 
 const VAULT_KEY = '0xpray_v2'
+const VERSION_KEY = '0xpray_v2_ver'
+
+function nextVersion(): number {
+  const v = parseInt(localStorage.getItem(VERSION_KEY) ?? '0') + 1
+  localStorage.setItem(VERSION_KEY, String(v))
+  return v
+}
+
+export function getVersion(): number {
+  return parseInt(localStorage.getItem(VERSION_KEY) ?? '0')
+}
+
+export function setVersion(v: number): void {
+  localStorage.setItem(VERSION_KEY, String(v))
+}
 
 export const DEFAULT_VAULT: Vault = {
   prayers: [],
@@ -44,7 +60,12 @@ export async function saveVault(key: CryptoKey, vault: Vault): Promise<void> {
   const meta = loadMeta()
   if (!meta) throw new Error('No vault meta')
   const { iv, ct } = await encrypt(key, JSON.stringify(vault))
-  localStorage.setItem(VAULT_KEY, JSON.stringify({ salt: meta.salt, iv, ct }))
+  const newMeta: VaultMeta = { salt: meta.salt, iv, ct }
+  localStorage.setItem(VAULT_KEY, JSON.stringify(newMeta))
+  if (isLoggedIn()) {
+    const version = nextVersion()
+    pushVault(newMeta, version).catch(() => {})
+  }
 }
 
 export async function reencryptVault(

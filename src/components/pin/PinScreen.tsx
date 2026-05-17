@@ -3,7 +3,6 @@ import { Flame } from 'lucide-react'
 import { vaultExists, initVault, openVault } from '@/lib/storage'
 import { reencryptVault } from '@/lib/storage'
 import { useVault } from '@/store/vault'
-import type { AppLockState } from '@/types'
 
 const PIN_LEN = 4
 

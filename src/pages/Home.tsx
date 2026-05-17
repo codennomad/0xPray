@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router'
-import { Lock, Plus, TrendingUp, BookOpen, CheckCircle2 } from 'lucide-react'
+import { Lock, Plus, TrendingUp, BookOpen } from 'lucide-react'
 import { useVault } from '@/store/vault'
 import { PrayerCard } from '@/components/prayer/PrayerCard'
 import { Button } from '@/components/ui/button'

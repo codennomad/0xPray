@@ -4,10 +4,10 @@ const dec = new TextDecoder()
 export const b64enc = (buf: ArrayBuffer | Uint8Array): string =>
   btoa(String.fromCharCode(...new Uint8Array(buf instanceof ArrayBuffer ? buf : buf)))
 
-export const b64dec = (s: string): Uint8Array =>
-  Uint8Array.from(atob(s), (c) => c.charCodeAt(0))
+export const b64dec = (s: string): Uint8Array<ArrayBuffer> =>
+  Uint8Array.from(atob(s), (c) => c.charCodeAt(0)) as Uint8Array<ArrayBuffer>
 
-export async function deriveKey(pin: string, salt: Uint8Array): Promise<CryptoKey> {
+export async function deriveKey(pin: string, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
   const km = await crypto.subtle.importKey('raw', enc.encode(pin), 'PBKDF2', false, ['deriveKey'])
   return crypto.subtle.deriveKey(
     { name: 'PBKDF2', salt, iterations: 210_000, hash: 'SHA-256' },

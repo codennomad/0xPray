@@ -10,9 +10,18 @@ import {
   ChevronRight,
   BookOpen,
   Shield,
+  Cloud,
+  CloudOff,
+  RefreshCw,
+  LogOut,
+  UserPlus,
 } from 'lucide-react'
 import { useVault } from '@/store/vault'
-import { destroyVault, exportPlain } from '@/lib/storage'
+import { useAuth } from '@/store/auth'
+import { destroyVault, exportPlain, loadMeta, getVersion, setVersion } from '@/lib/storage'
+import { register, login, logout, pushVault, pullVault } from '@/lib/api'
+import { decrypt } from '@/lib/crypto'
+import type { Vault } from '@/types'
 import { PinScreen } from '@/components/pin/PinScreen'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -65,14 +74,83 @@ function SettingRow({
 }
 
 export default function Settings() {
-  const { vault, lock, updateSettings } = useVault()
+  const { vault, lock, unlock, updateSettings, key } = useVault()
   if (!vault) return null
   const { toast } = useToast()
+  const { user, setUser, signOut } = useAuth()
 
   const [showChangePin, setShowChangePin] = useState(false)
   const [showApiKey, setShowApiKey] = useState(false)
   const [apiKeyInput, setApiKeyInput] = useState(vault?.settings.apiKeyEncrypted ?? '')
   const [apiKeyVisible, setApiKeyVisible] = useState(false)
+
+  // Cloud auth state
+  const [showAuthForm, setShowAuthForm] = useState(false)
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
+  const [authEmail, setAuthEmail] = useState('')
+  const [authPassword, setAuthPassword] = useState('')
+  const [authLoading, setAuthLoading] = useState(false)
+  const [syncLoading, setSyncLoading] = useState(false)
+
+  const handleAuth = async () => {
+    if (!authEmail || !authPassword) return
+    setAuthLoading(true)
+    try {
+      const fn = authMode === 'login' ? login : register
+      const { token, user: u } = await fn(authEmail, authPassword)
+      setUser(u, token)
+      setShowAuthForm(false)
+      setAuthEmail('')
+      setAuthPassword('')
+      toast(authMode === 'login' ? 'Conectado!' : 'Conta criada!', 'success')
+    } catch (e: unknown) {
+      toast((e instanceof Error ? e.message : 'Erro') , 'error')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    signOut()
+    toast('Desconectado', 'success')
+  }
+
+  const handleSyncPush = async () => {
+    const meta = loadMeta()
+    if (!meta) return
+    setSyncLoading(true)
+    try {
+      await pushVault(meta, getVersion())
+      toast('Vault sincronizado', 'success')
+    } catch (e: unknown) {
+      toast((e instanceof Error ? e.message : 'Erro de sync'), 'error')
+    } finally {
+      setSyncLoading(false)
+    }
+  }
+
+  const handleSyncPull = async () => {
+    if (!key) return
+    setSyncLoading(true)
+    try {
+      const result = await pullVault()
+      if (!result) { toast('Nenhum vault no servidor', 'error'); return }
+      const { meta, version } = result
+      const plain = await decrypt(key, meta.iv, meta.ct).catch(() => null)
+      if (!plain) { toast('PIN diferente do vault no servidor', 'error'); return }
+      const remoteVault = JSON.parse(plain) as Vault
+      // key stays the same — same PIN encrypts both local and remote
+      unlock(key, remoteVault)
+      localStorage.setItem('0xpray_v2', JSON.stringify(meta))
+      setVersion(version)
+      toast('Vault restaurado do servidor', 'success')
+    } catch (e: unknown) {
+      toast((e instanceof Error ? e.message : 'Erro ao puxar vault'), 'error')
+    } finally {
+      setSyncLoading(false)
+    }
+  }
 
   if (showChangePin) {
     return (
@@ -132,6 +210,112 @@ export default function Settings() {
 
       <div className="scroll-area px-5 pb-nav">
         <div className="flex flex-col gap-3 pt-4 stagger">
+          {/* Cloud Sync */}
+          <p className="mono-label pt-2">// sincronização</p>
+
+          {user ? (
+            <>
+              <SettingRow
+                icon={Cloud}
+                title="Conta conectada"
+                sub={user.email}
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-answered" />
+              </SettingRow>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSyncPush}
+                  disabled={syncLoading}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[var(--color-border)] bg-s1 text-[12px] font-mono text-flame hover:border-flame/40 disabled:opacity-50 transition-colors"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${syncLoading ? 'animate-spin' : ''}`} />
+                  Enviar
+                </button>
+                <button
+                  onClick={handleSyncPull}
+                  disabled={syncLoading}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[var(--color-border)] bg-s1 text-[12px] font-mono text-muted hover:border-[var(--color-border-hi)] disabled:opacity-50 transition-colors"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${syncLoading ? 'animate-spin' : ''}`} />
+                  Restaurar
+                </button>
+              </div>
+
+              <SettingRow
+                icon={LogOut}
+                title="Sair da conta"
+                sub="Desconectar do servidor"
+                onClick={handleLogout}
+              />
+            </>
+          ) : (
+            <>
+              <SettingRow
+                icon={showAuthForm ? CloudOff : Cloud}
+                title={showAuthForm ? 'Cancelar' : 'Conectar conta'}
+                sub={showAuthForm ? '' : 'Sync entre dispositivos'}
+                onClick={() => setShowAuthForm(!showAuthForm)}
+              />
+
+              {showAuthForm && (
+                <div className="flex flex-col gap-3 p-4 rounded-xl border border-flame/20 bg-flame/5 animate-fade-up">
+                  <div className="flex gap-2 font-mono text-[10px]">
+                    <button
+                      onClick={() => setAuthMode('login')}
+                      className={`flex-1 py-1.5 rounded-lg border transition-colors ${authMode === 'login' ? 'border-flame text-flame' : 'border-[var(--color-border)] text-faint'}`}
+                    >
+                      Entrar
+                    </button>
+                    <button
+                      onClick={() => setAuthMode('register')}
+                      className={`flex-1 py-1.5 rounded-lg border transition-colors ${authMode === 'register' ? 'border-flame text-flame' : 'border-[var(--color-border)] text-faint'}`}
+                    >
+                      Criar conta
+                    </button>
+                  </div>
+
+                  <Input
+                    type="email"
+                    placeholder="email@exemplo.com"
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Senha (min. 8 caracteres)"
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
+                  />
+
+                  <Button
+                    variant="flame"
+                    size="sm"
+                    onClick={handleAuth}
+                    disabled={authLoading || !authEmail || authPassword.length < 8}
+                  >
+                    {authLoading ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : authMode === 'login' ? (
+                      <>
+                        <Cloud className="w-3.5 h-3.5" /> Entrar
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="w-3.5 h-3.5" /> Criar conta
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="font-mono text-[9px] text-faint">
+                    O vault permanece criptografado — o servidor nunca vê suas orações.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
           {/* Security */}
           <p className="mono-label pt-2">// segurança</p>
 

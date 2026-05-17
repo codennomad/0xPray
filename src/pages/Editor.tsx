@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { ArrowLeft, Save, Trash2, Sparkles, PenLine } from 'lucide-react'
 import { useVault } from '@/store/vault'
